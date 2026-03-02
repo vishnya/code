@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -e
 
-REPO_DIR="$HOME/code"
-PROJECT="$REPO_DIR/anki_screenshot_creator"
+REPO_DIR="$HOME/anki-screenshot-creator"
+PROJECT="$REPO_DIR"
 
 # Clone repo if not already present
 if [ ! -d "$REPO_DIR/.git" ]; then
@@ -12,10 +12,14 @@ fi
 # Python dependencies
 pip3 install anthropic watchdog requests
 
-# Symlinks
+# Symlinks for runtime paths
 ln -sf "$PROJECT/anki_watcher.py" "$HOME/anki_watcher.py"
 mkdir -p "$HOME/.hammerspoon"
 ln -sf "$PROJECT/hammerspoon/init.lua" "$HOME/.hammerspoon/init.lua"
+
+# Symlink CONTEXT.md to a fixed path the Claude skill can always find
+mkdir -p "$HOME/.anki-screenshot-creator"
+ln -sf "$PROJECT/CONTEXT.md" "$HOME/.anki-screenshot-creator/CONTEXT.md"
 
 # Claude /anki skill
 mkdir -p "$HOME/.claude/commands"
