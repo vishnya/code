@@ -46,6 +46,9 @@ GOOD: front: "How does a neural network update its weights?" / back: "It uses ba
 BAD: front: "Describe the role of the hippocampus in memory consolidation." / back: "The hippocampus plays a critical role in the consolidation of information from short-term to long-term memory, as illustrated by studies of patients with hippocampal lesions."
 GOOD: front: "Why do hippocampal lesions cause amnesia for new memories?" / back: "The hippocampus converts short-term memories into long-term ones — damage stops that transfer cold."
 
+BAD: front: "What is a model's vocabulary?" / back: "The set of all tokens a model can work with." — too vague: 'tokens' is unexplained and 'work with' tells you nothing about what the vocabulary does or why it matters.
+GOOD: front: "What is a model's vocabulary?" / back: "The fixed list of tokens it knows — every word, word-fragment, and symbol it can read or write. Words outside the vocabulary get broken into smaller pieces that are in it." — explains what a token is and includes the key insight about unknown words being split.
+
 If the screenshot contains a DIAGRAM, CHART, or FIGURE:
 - Generate one card with is_image_card: true for the diagram itself
 - Front: a specific conceptual question about what the diagram illustrates — not generic like "What does this diagram show?" but precise enough that someone could answer it cold, e.g. "What is the input/output flow of a multimodal model?" or "How does CLIP training work?"
