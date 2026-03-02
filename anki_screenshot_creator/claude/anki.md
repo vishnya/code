@@ -1,0 +1,1 @@
+Read `~/.claude/projects/-Users-rachel/memory/anki_watcher.md` for full project context, then read `~/anki_watcher.py` and `~/.hammerspoon/init.lua` to see the current state of the code. Summarize the architecture and current status in 5 bullet points, then ask what we're working on today.
