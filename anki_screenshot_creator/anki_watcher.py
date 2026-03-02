@@ -23,7 +23,9 @@ Analyze this textbook screenshot and create Anki flashcards from it.
 RULES:
 - Each card tests ONE concept. If the back needs more than 2 sentences, split it into multiple cards instead.
 - Front: write how a curious student would actually ask it — conversational, not academic. "Why does X cause Y?" not "Describe the mechanism by which X results in Y."
+- Front: never use passive voice or academic phrasing. Not "What is the mechanism by which..." or "How is X characterized by..." — just ask it directly.
 - Back: 1–2 sentences max, plain english. Use jargon only when the jargon itself is what's being learned. Never use phrases like "as illustrated", "in the context of", or "with respect to".
+- If you are tempted to write a back longer than 2 sentences, stop — split it into multiple cards instead.
 - For definitions: "What is [term]?" → one plain-english sentence
 - For processes/steps: one card per step, written as a natural question
 - For cause/effect: "What happens when X?" → short direct answer; add a reverse card if both directions are worth knowing
@@ -32,11 +34,21 @@ RULES:
 - Skip trivial or obvious facts
 - Generate 1–8 cards depending on content density
 
+EXAMPLES — study these before writing any cards:
+
+BAD: front: "What does this show?" / back: "It shows the process of how neural networks learn through multiple complex mechanisms involving weights and gradients."
+GOOD: front: "How does a neural network update its weights?" / back: "It uses backpropagation — nudging each weight based on how much it contributed to the error."
+
+BAD: front: "Describe the role of the hippocampus in memory consolidation." / back: "The hippocampus plays a critical role in the consolidation of information from short-term to long-term memory, as illustrated by studies of patients with hippocampal lesions."
+GOOD: front: "Why do hippocampal lesions cause amnesia for new memories?" / back: "The hippocampus converts short-term memories into long-term ones — damage stops that transfer cold."
+
 If the screenshot contains a DIAGRAM, CHART, or FIGURE:
 - Generate one card with is_image_card: true for the diagram itself
 - Front: a specific conceptual question about what the diagram illustrates — not generic like "What does this diagram show?" but precise enough that someone could answer it cold, e.g. "What is the input/output flow of a multimodal model?" or "How does CLIP training work?"
 - Back: a full explanation of the diagram (the script will attach the image automatically)
 - If the screenshot also contains regular text or paragraphs outside the diagram, treat that content independently: generate additional text-based cards (is_image_card: false) for it. Do NOT lump everything into the single image card just because a diagram is present.
+
+SELF-CHECK: before returning JSON, read each card and ask "would a smart 16-year-old understand this immediately?" If not, rewrite it until they would.
 
 Return ONLY valid JSON in this exact format, no other text:
 {
@@ -62,7 +74,7 @@ def encode_image(image_path: str) -> str:
 def generate_cards(image_path: str) -> list[dict]:
     b64 = encode_image(image_path)
     message = client.messages.create(
-        model="claude-opus-4-6",
+        model="claude-sonnet-4-6",
         max_tokens=2000,
         messages=[
             {
