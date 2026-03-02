@@ -6,7 +6,7 @@ PROJECT="$REPO_DIR/anki_screenshot_creator"
 
 # Clone repo if not already present
 if [ ! -d "$REPO_DIR/.git" ]; then
-  git clone https://github.com/vishnya/code "$REPO_DIR"
+  git clone https://github.com/vishnya/anki-screenshot-creator "$REPO_DIR"
 fi
 
 # Python dependencies

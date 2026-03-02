@@ -5,7 +5,7 @@ Take a screenshot of anything — a textbook, slide, diagram — and get Anki fl
 ## Install
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/vishnya/code/main/anki_screenshot_creator/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/vishnya/anki-screenshot-creator/main/install.sh | bash
 ```
 
 Then add your API key to `~/.zshrc`:
