@@ -66,6 +66,14 @@ Claude follows Anki best practices: one concept per card, plain English backs, c
 
 The watcher process starts automatically when you pick a deck and runs in a Terminal window. Leave it open across sessions — just press `⌥⇧A` to screenshot whenever.
 
+## Uninstall
+
+```bash
+bash ~/anki-screenshot-creator/uninstall.sh
+```
+
+Removes symlinks, the shell function, and the Claude skill. Prompts before deleting the repo. Leaves Hammerspoon and Python packages in place.
+
 ## Files
 
 ```
@@ -77,4 +85,5 @@ claude/
   anki.md             # /anki Claude Code skill
 CONTEXT.md            # living architecture doc, updated each Claude session
 install.sh            # one-step installer
+uninstall.sh          # removes everything install.sh added
 ```

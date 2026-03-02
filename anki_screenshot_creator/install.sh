@@ -85,3 +85,5 @@ echo "  If prompted, grant Accessibility permissions in System Settings."
 echo ""
 
 echo "=== Done! Press ⌥⇧A to start. ==="
+echo ""
+echo "To uninstall: bash $REPO_DIR/uninstall.sh"
