@@ -22,7 +22,7 @@ fi
 
 # ── Python dependencies ───────────────────────────────────────────────────────
 echo "Installing Python dependencies..."
-pip3 install -q anthropic watchdog requests
+pip3 install -q anthropic watchdog requests Pillow
 echo "✓ Python dependencies"
 
 # ── Clone repo ────────────────────────────────────────────────────────────────

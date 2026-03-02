@@ -1,17 +1,21 @@
 import anthropic
 import argparse
 import base64
+import io
 import json
 import re
 import requests
 import time
 from pathlib import Path
+from PIL import Image
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
 
 # ── Config ────────────────────────────────────────────────────────────────────
 SCREENSHOTS_ROOT = Path.home() / "AnkiScreenshots"
 ANKICONNECT_URL  = "http://localhost:8765"
+MAX_IMAGE_BYTES  = 5 * 1024 * 1024   # 5 MB API limit (applies to all models)
+MAX_DIMENSION    = 1568               # Anthropic's recommended max for quality
 # ─────────────────────────────────────────────────────────────────────────────
 
 client = anthropic.Anthropic()
@@ -68,7 +72,22 @@ For image cards set is_image_card to true."""
 
 def encode_image(image_path: str) -> str:
     with open(image_path, "rb") as f:
-        return base64.standard_b64encode(f.read()).decode("utf-8")
+        data = f.read()
+    if len(base64.standard_b64encode(data)) <= MAX_IMAGE_BYTES:
+        return base64.standard_b64encode(data).decode("utf-8")
+    # Resize down until it fits
+    img = Image.open(io.BytesIO(data))
+    img.thumbnail((MAX_DIMENSION, MAX_DIMENSION), Image.LANCZOS)
+    while True:
+        buf = io.BytesIO()
+        img.save(buf, format="PNG")
+        data = buf.getvalue()
+        if len(base64.standard_b64encode(data)) <= MAX_IMAGE_BYTES:
+            break
+        w, h = img.size
+        img = img.resize((int(w * 0.8), int(h * 0.8)), Image.LANCZOS)
+    print(f"  ↓ Resized image to {img.size[0]}×{img.size[1]}px to fit API limit")
+    return base64.standard_b64encode(data).decode("utf-8")
 
 
 def generate_cards(image_path: str) -> list[dict]:
