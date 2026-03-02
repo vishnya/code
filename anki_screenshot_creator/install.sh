@@ -1,44 +1,87 @@
 #!/usr/bin/env bash
 set -e
 
+echo "=== anki-screenshot-creator setup ==="
+echo ""
+
+# ── Homebrew ──────────────────────────────────────────────────────────────────
+if ! command -v brew &>/dev/null; then
+  echo "Installing Homebrew..."
+  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+else
+  echo "✓ Homebrew"
+fi
+
+# ── Hammerspoon ───────────────────────────────────────────────────────────────
+if [ ! -d "/Applications/Hammerspoon.app" ]; then
+  echo "Installing Hammerspoon..."
+  brew install --cask hammerspoon
+else
+  echo "✓ Hammerspoon"
+fi
+
+# ── Python dependencies ───────────────────────────────────────────────────────
+echo "Installing Python dependencies..."
+pip3 install -q anthropic watchdog requests
+echo "✓ Python dependencies"
+
+# ── Clone repo ────────────────────────────────────────────────────────────────
 REPO_DIR="$HOME/anki-screenshot-creator"
 PROJECT="$REPO_DIR"
 
-# Clone repo if not already present
 if [ ! -d "$REPO_DIR/.git" ]; then
+  echo "Cloning repo to $REPO_DIR..."
   git clone https://github.com/vishnya/anki-screenshot-creator "$REPO_DIR"
+else
+  echo "✓ Repo already present at $REPO_DIR"
 fi
 
-# Python dependencies
-pip3 install anthropic watchdog requests
-
-# Symlinks for runtime paths
+# ── Symlinks ──────────────────────────────────────────────────────────────────
 ln -sf "$PROJECT/anki_watcher.py" "$HOME/anki_watcher.py"
 mkdir -p "$HOME/.hammerspoon"
 ln -sf "$PROJECT/hammerspoon/init.lua" "$HOME/.hammerspoon/init.lua"
-
-# Symlink CONTEXT.md to a fixed path the Claude skill can always find
 mkdir -p "$HOME/.anki-screenshot-creator"
 ln -sf "$PROJECT/CONTEXT.md" "$HOME/.anki-screenshot-creator/CONTEXT.md"
+echo "✓ Symlinks"
 
-# Claude /anki skill
-mkdir -p "$HOME/.claude/commands"
-cp "$PROJECT/claude/anki.md" "$HOME/.claude/commands/anki.md"
-
-# .zshrc
-if ! grep -q "anki_screenshot_creator/anki.zsh" "$HOME/.zshrc"; then
-  printf '\n# Anki watcher\nsource %s/anki.zsh\n' "$PROJECT" >> "$HOME/.zshrc"
+# ── Claude /anki skill ────────────────────────────────────────────────────────
+if [ -d "$HOME/.claude/commands" ]; then
+  cp "$PROJECT/claude/anki.md" "$HOME/.claude/commands/anki.md"
+  echo "✓ Claude /anki skill"
 fi
 
+# ── .zshrc ────────────────────────────────────────────────────────────────────
+if ! grep -q "anki-screenshot-creator/anki.zsh" "$HOME/.zshrc" 2>/dev/null; then
+  printf '\n# Anki watcher\nsource %s/anki.zsh\n' "$PROJECT" >> "$HOME/.zshrc"
+fi
+echo "✓ Shell function"
+
+# ── Anthropic API key ─────────────────────────────────────────────────────────
+if [[ -z "$ANTHROPIC_API_KEY" ]] && ! grep -q "ANTHROPIC_API_KEY" "$HOME/.zshrc" 2>/dev/null; then
+  echo ""
+  read -rp "Paste your Anthropic API key (from console.anthropic.com): " api_key
+  printf '\nexport ANTHROPIC_API_KEY="%s"\n' "$api_key" >> "$HOME/.zshrc"
+  echo "✓ API key saved to ~/.zshrc"
+else
+  echo "✓ Anthropic API key"
+fi
+
+# ── AnkiConnect ───────────────────────────────────────────────────────────────
 echo ""
-echo "Installed. Two manual steps remain:"
+echo "Opening Anki to install the AnkiConnect add-on..."
+open -a Anki 2>/dev/null || echo "(Anki not found — install it from https://apps.ankiweb.net first)"
 echo ""
-echo "  1. Add your API key to ~/.zshrc:"
-echo "       export ANTHROPIC_API_KEY=\"sk-ant-...\""
+echo "  In Anki:  Tools > Add-ons > Get Add-ons"
+echo "  Code:     2055492159"
+echo "  Click OK, then restart Anki."
 echo ""
-echo "  2. Install AnkiConnect inside Anki:"
-echo "       Tools > Add-ons > Get Add-ons > code: 2055492159"
+read -rp "Press Enter once AnkiConnect is installed and Anki has restarted... "
+
+# ── Hammerspoon first launch ──────────────────────────────────────────────────
 echo ""
-echo "  3. Reload Hammerspoon (Cmd+Option+R) or run: hs -c 'hs.reload()'"
+echo "Opening Hammerspoon..."
+open -a Hammerspoon
+echo "  If prompted, grant Accessibility permissions in System Settings."
 echo ""
-echo "Then press ⌥⇧A to start."
+
+echo "=== Done! Press ⌥⇧A to start. ==="

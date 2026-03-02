@@ -2,24 +2,25 @@
 
 Take a screenshot of anything — a textbook, slide, diagram — and get Anki flashcards automatically, powered by Claude.
 
+## Requirements
+
+- macOS
+- [Anki](https://apps.ankiweb.net) installed
+- [Anthropic API key](https://console.anthropic.com)
+
+Everything else (Hammerspoon, AnkiConnect, Python dependencies) is handled by the install script.
+
 ## Install
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/vishnya/anki-screenshot-creator/main/install.sh | bash
 ```
 
-Then add your API key to `~/.zshrc`:
-
-```zsh
-export ANTHROPIC_API_KEY="sk-ant-..."
-```
-
-## Requirements
-
-- macOS with [Hammerspoon](https://hammerspoon.org)
-- [Anki](https://apps.ankiweb.net) with [AnkiConnect](https://ankiweb.net/shared/info/2055492159) (add-on code: `2055492159`)
-- Python 3 with `pip3`
-- Anthropic API key
+The script will:
+- Install Hammerspoon (via Homebrew)
+- Install Python dependencies
+- Open Anki and walk you through adding the AnkiConnect add-on (code: `2055492159`)
+- Prompt for your Anthropic API key if not already set
 
 ## Usage
 
@@ -36,16 +37,16 @@ export ANTHROPIC_API_KEY="sk-ant-..."
 
 ## Claude `/anki` skill
 
-If you use [Claude Code](https://claude.ai/code), there's a `/anki` slash command that loads full project context and asks what you want to work on. The install script copies it automatically.
+If you use [Claude Code](https://claude.ai/code), there's a `/anki` slash command that loads full project context and asks what you want to work on. The install script adds it automatically.
 
 To add it manually:
 
 ```bash
 mkdir -p ~/.claude/commands
-cp ~/code/anki_screenshot_creator/claude/anki.md ~/.claude/commands/anki.md
+cp ~/anki-screenshot-creator/claude/anki.md ~/.claude/commands/anki.md
 ```
 
-Then in any Claude Code session, type `/anki` to load context for this project.
+Then type `/anki` in any Claude Code session to load context for this project.
 
 ## How it works
 
@@ -61,21 +62,19 @@ anki_watcher.py (watchdog)
   → posts each card to Anki via AnkiConnect HTTP API (localhost:8765)
 ```
 
-Claude is prompted to follow Anki best practices: one concept per card, plain English backs, cloze for lists, image cards for diagrams. It generates 1–8 cards depending on content density.
+Claude follows Anki best practices: one concept per card, plain English backs, cloze for lists, image cards for diagrams. Generates 1–8 cards depending on content density.
 
-The watcher process is started automatically when you pick a deck. It runs in a Terminal window and can be left open across sessions — just press `⌥⇧A` to screenshot whenever.
+The watcher process starts automatically when you pick a deck and runs in a Terminal window. Leave it open across sessions — just press `⌥⇧A` to screenshot whenever.
 
 ## Files
 
 ```
-anki_screenshot_creator/
-  anki_watcher.py       # watchdog + Claude + AnkiConnect logic
-  anki.zsh              # anki() shell function (sourced by ~/.zshrc)
-  hammerspoon/
-    init.lua            # hotkey logic and deck chooser UI
-  claude/
-    anki.md             # /anki Claude Code skill
-  install.sh            # one-step installer
+anki_watcher.py       # watchdog + Claude + AnkiConnect logic
+anki.zsh              # anki() shell function (sourced by ~/.zshrc)
+hammerspoon/
+  init.lua            # hotkey logic and deck chooser UI
+claude/
+  anki.md             # /anki Claude Code skill
+CONTEXT.md            # living architecture doc, updated each Claude session
+install.sh            # one-step installer
 ```
-
-`~/anki_watcher.py` and `~/.hammerspoon/init.lua` are symlinks into this repo so edits are version-controlled automatically.
