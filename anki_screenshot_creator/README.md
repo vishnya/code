@@ -44,8 +44,8 @@ Configure everything in the web UI — no decisions needed at install time. The 
 |----------|--------------|--------------|---------|
 | Anthropic *(default)* | `claude-sonnet-4-6` | `claude-opus-4-6` | [console.anthropic.com](https://console.anthropic.com) |
 | OpenAI | `gpt-4o` | `gpt-4-turbo`, `gpt-4o-mini` | [platform.openai.com/api-keys](https://platform.openai.com/api-keys) |
-| Groq | `llama-3.3-70b-versatile` | `llama-3.2-90b-vision-preview` | [console.groq.com](https://console.groq.com) — free tier |
-| Gemini | `gemini-2.0-flash` | `gemini-1.5-pro`, `gemini-2.0-pro` | [aistudio.google.com](https://aistudio.google.com) — free tier |
+| Groq | `llama-3.3-70b-versatile` | `llama-3.2-90b-vision-preview` | [console.groq.com](https://console.groq.com) |
+| Gemini | `gemini-2.0-flash` | `gemini-1.5-pro`, `gemini-2.0-pro` | [aistudio.google.com](https://aistudio.google.com) |
 | Custom endpoint | *(set in UI)* | any vision-capable model | none required |
 
 ### Custom endpoint
