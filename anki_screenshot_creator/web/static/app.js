@@ -22,6 +22,9 @@ const apiKeyLabel     = document.getElementById("api-key-label");
 const baseUrlField    = document.getElementById("field-base-url");
 const baseUrlInput    = document.getElementById("base-url");
 const promptInput     = document.getElementById("custom-prompt");
+const promptSaved     = document.getElementById("prompt-saved");
+const promptSavedDeck = document.getElementById("prompt-saved-deck");
+const btnClearPrompt  = document.getElementById("btn-clear-prompt");
 const startBtn        = document.getElementById("btn-start");
 const stopBtn         = document.getElementById("btn-stop");
 const statusBanner    = document.getElementById("status-banner");
@@ -53,6 +56,7 @@ async function loadConfig() {
   apiKeyInput.value = config.api_keys?.[provider] || "";
 
   updateProviderUI(provider, false);
+  updatePromptSavedIndicator(config.deck);
   updateSessionUI();
 }
 
@@ -79,10 +83,10 @@ async function loadDecks() {
         deckSelect.value = config.deck;
       }
     } else {
-      deckSelect.innerHTML = '<option value="">Anki not reachable</option>';
+      deckSelect.innerHTML = '<option value="">Anki not reachable — is it open?</option>';
     }
   } catch {
-    deckSelect.innerHTML = '<option value="">Anki not reachable</option>';
+    deckSelect.innerHTML = '<option value="">Anki not reachable — is it open?</option>';
   }
 }
 
@@ -90,24 +94,40 @@ async function loadDecks() {
 async function saveConfig() {
   if (sessionActive) return;
   const provider = providerSelect.value;
+  const deck     = deckSelect.value;
+  const prompt   = promptInput.value.trim();
+
+  // Build updated deck_prompts: set or delete the current deck's entry
+  const deckPrompts = { ...(config?.deck_prompts || {}) };
+  if (deck) {
+    if (prompt) deckPrompts[deck] = prompt;
+    else        delete deckPrompts[deck];
+  }
+
   const body = {
-    deck:          deckSelect.value,
+    deck,
     model: {
       provider,
       model_name: modelNameInput.value.trim(),
       base_url:   provider === "custom" ? baseUrlInput.value.trim() : null,
     },
     api_keys:      { ...(config?.api_keys || {}), [provider]: apiKeyInput.value.trim() },
-    custom_prompt: promptInput.value.trim(),
+    custom_prompt: prompt,
+    deck_prompts:  deckPrompts,
   };
   await fetch("/api/config", { method: "POST", body: JSON.stringify(body), headers: { "Content-Type": "application/json" } });
   config = { ...config, ...body };
 }
 
-[apiKeyInput, baseUrlInput, modelNameInput, promptInput].forEach(el => {
+[apiKeyInput, baseUrlInput, modelNameInput].forEach(el => {
   el.addEventListener("blur", saveConfig);
 });
-deckSelect.addEventListener("change", saveConfig);
+
+// Prompt gets its own blur handler so it can update the saved indicator
+promptInput.addEventListener("blur", async () => {
+  await saveConfig();
+  updatePromptSavedIndicator(deckSelect.value);
+});
 
 // ── Provider UI ────────────────────────────────────────────────────────────────
 function updateProviderUI(provider, resetName) {
@@ -177,6 +197,44 @@ btnCancelDeck.addEventListener("click", () => {
   deckNewInput.value = "";
   deckRow.classList.remove("hidden");
   deckNewRow.classList.add("hidden");
+});
+
+deckSelect.addEventListener("change", async () => {
+  const oldDeck   = config?.deck || "";
+  const newDeck   = deckSelect.value;
+  const oldPrompt = promptInput.value.trim();
+
+  // Persist the leaving deck's prompt in memory before switching
+  const deckPrompts = { ...(config?.deck_prompts || {}) };
+  if (oldDeck) {
+    if (oldPrompt) deckPrompts[oldDeck] = oldPrompt;
+    else           delete deckPrompts[oldDeck];
+  }
+  config = { ...config, deck: newDeck, deck_prompts: deckPrompts };
+
+  // Load the new deck's saved prompt (or clear if none)
+  promptInput.value = deckPrompts[newDeck] || "";
+  updatePromptSavedIndicator(newDeck);
+
+  await saveConfig();
+});
+
+// ── Prompt saved indicator ──────────────────────────────────────────────────────
+function updatePromptSavedIndicator(deck) {
+  const hasSaved = !!(deck && config?.deck_prompts?.[deck]);
+  if (hasSaved) {
+    promptSavedDeck.textContent = deck;
+    promptSaved.classList.remove("hidden");
+  } else {
+    promptSaved.classList.add("hidden");
+  }
+}
+
+btnClearPrompt.addEventListener("click", () => {
+  promptInput.value = "";
+  promptSaved.classList.add("hidden");
+  saveConfig();
+  promptInput.focus();
 });
 
 // ── Session UI ─────────────────────────────────────────────────────────────────

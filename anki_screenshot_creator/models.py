@@ -84,9 +84,12 @@ def encode_image(image_path: str) -> str:
 
 def _build_prompt(config: dict) -> str:
     custom = config.get("custom_prompt", "").strip()
-    if custom:
-        return PROMPT_TEMPLATE + f"\n\nADDITIONAL INSTRUCTIONS FROM USER:\n{custom}"
-    return PROMPT_TEMPLATE
+    if not custom:
+        return PROMPT_TEMPLATE
+    # Insert before SELF-CHECK so the focus is active during card writing,
+    # and the JSON format spec stays last (where it has strongest effect).
+    focus_block = f"TOPIC FOCUS FOR THIS SESSION:\n{custom}\n\n"
+    return PROMPT_TEMPLATE.replace("SELF-CHECK:", focus_block + "SELF-CHECK:", 1)
 
 
 def _parse_cards(raw: str) -> list[dict]:

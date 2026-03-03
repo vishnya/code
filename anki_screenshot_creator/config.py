@@ -21,6 +21,7 @@ DEFAULT_CONFIG = {
         "gemini": "",
     },
     "custom_prompt": "",
+    "deck_prompts": {},
 }
 
 

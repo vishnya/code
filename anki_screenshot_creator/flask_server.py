@@ -153,7 +153,7 @@ def api_config_get():
 def api_config_post():
     data = request.get_json(force=True)
     conf = cfg.load()
-    for key in ("deck", "model", "api_keys", "custom_prompt"):
+    for key in ("deck", "model", "api_keys", "custom_prompt", "deck_prompts"):
         if key in data:
             conf[key] = data[key]
     cfg.save(conf)
