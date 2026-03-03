@@ -1,14 +1,14 @@
 # anki-screenshot-creator
 
-Take a screenshot of anything — a textbook, slide, diagram — and get Anki flashcards automatically, powered by Claude.
+Take a screenshot of anything — a textbook, slide, diagram — and get Anki flashcards automatically. Works with Claude, GPT-4o, Groq, or any local model.
 
 ## Requirements
 
 - macOS
 - [Anki](https://apps.ankiweb.net) installed
-- [Anthropic API key](https://console.anthropic.com)
+- An API key for your chosen provider (or a local model via Ollama/LM Studio)
 
-Everything else (Hammerspoon, AnkiConnect, Python dependencies) is handled by the install script.
+Everything else (Hammerspoon, AnkiConnect, Python dependencies, background server) is handled by the install script.
 
 ## Install
 
@@ -16,55 +16,69 @@ Everything else (Hammerspoon, AnkiConnect, Python dependencies) is handled by th
 curl -fsSL https://raw.githubusercontent.com/vishnya/anki-screenshot-creator/main/install.sh | bash
 ```
 
-The script will:
-- Install Hammerspoon (via Homebrew)
-- Install Python dependencies
-- Open Anki and walk you through adding the AnkiConnect add-on (code: `2055492159`)
-- Prompt for your Anthropic API key if not already set
+The script:
+- Installs Hammerspoon (via Homebrew)
+- Installs Python dependencies (`flask`, `anthropic`, `openai`, `watchdog`, `Pillow`, `requests`)
+- Opens Anki and walks you through adding the AnkiConnect add-on (code: `2055492159`)
+- Sets up a launchd agent so the server starts automatically on login
 
 ## Usage
 
 | Hotkey | Action |
 |--------|--------|
-| `⌥⇧A` | If Anki is closed: opens it. If open, no deck selected: shows deck chooser. If deck selected: takes screenshot immediately. |
-| `⌥⇧⌘A` | Reset deck selection and show chooser again (switch subjects). |
+| `⌥⇧A` | Session active: takes screenshot. No session: opens config page. |
+| `⌥⇧⌘A` | Stop session and reopen config page (switch decks/subjects). |
 
 **Workflow:**
-1. Press `⌥⇧A` — Anki opens if it isn't already
-2. Pick a deck (or create one) from the chooser
-3. Press `⌥⇧A` again — drag to select any region of your screen
+1. Press `⌥⇧A` — browser opens to `http://localhost:5789`
+2. Choose a deck, pick your model, add your API key, click **Start Session**
+3. Press `⌥⇧A` — drag to select any region of your screen
 4. Cards appear in Anki within ~10 seconds
+5. Watch them populate in the **Recent Cards** panel on the page
+
+## Model support
+
+Configure everything in the web UI — no decisions needed at install time:
+
+| Provider | Examples | Notes |
+|----------|---------|-------|
+| Anthropic | `claude-sonnet-4-6`, `claude-opus-4-6` | Default |
+| OpenAI | `gpt-4o`, `gpt-4-turbo` | Needs OpenAI key |
+| Groq | `llama-3.3-70b-versatile` | Free tier available |
+| Gemini | `gemini-2.0-flash`, `gemini-1.5-pro` | Key from [aistudio.google.com](https://aistudio.google.com) |
+| Custom endpoint | Any Ollama/LM Studio model | Enter base URL, e.g. `http://localhost:11434/v1` |
+
+The **Model name** field (next to the Provider dropdown) controls which specific model is used — change it to `claude-opus-4-6`, `gpt-4-turbo`, etc. at any time. Settings autosave on blur.
+
+## Config
+
+Settings (deck, model, API key, custom prompt) are saved to `~/.anki-screenshot-creator/config.json` with `chmod 600` and autosaved on blur — no explicit save step needed. The last-used deck is remembered and pre-selected on next visit. If `$ANTHROPIC_API_KEY` is set in your environment, it pre-fills on first run.
+
+## Server logs
+
+```bash
+tail -f /tmp/anki-screenshot-creator.log
+```
 
 ## Claude `/anki` skill
 
-If you use [Claude Code](https://claude.ai/code), there's a `/anki` slash command that loads full project context and asks what you want to work on. The install script adds it automatically.
-
-To add it manually:
-
-```bash
-mkdir -p ~/.claude/commands
-cp ~/anki-screenshot-creator/claude/anki.md ~/.claude/commands/anki.md
-```
-
-Then type `/anki` in any Claude Code session to load context for this project.
+If you use [Claude Code](https://claude.ai/code), there's a `/anki` slash command that loads full project context. The install script adds it automatically.
 
 ## How it works
 
 ```
 ⌥⇧A keypress (Hammerspoon)
-  → screencapture -i  (interactive crosshair selector)
-  → saves PNG to ~/AnkiScreenshots/incoming/
+  → GET /api/session → session active?
+  → yes: screencapture -i → saves PNG to ~/AnkiScreenshots/incoming/
+  → no:  opens http://localhost:5789 in browser
 
-anki_watcher.py (watchdog)
-  → detects new PNG
-  → sends image to Claude (claude-opus-4-6) with card-writing prompt
-  → parses JSON response into card objects
-  → posts each card to Anki via AnkiConnect HTTP API (localhost:8765)
+flask_server.py (launchd background process, port 5789)
+  → serves web UI at /
+  → watchdog thread detects new PNG in incoming/
+  → calls models.py → Claude/GPT/Groq/Gemini/Ollama generates cards
+  → AnkiConnect HTTP API (localhost:8765) adds cards to Anki
+  → SSE stream pushes progress to browser
 ```
-
-Claude follows Anki best practices: one concept per card, plain English backs, cloze for lists, image cards for diagrams. Generates 1–8 cards depending on content density.
-
-The watcher process starts automatically when you pick a deck and runs in a Terminal window. Leave it open across sessions — just press `⌥⇧A` to screenshot whenever.
 
 ## Uninstall
 
@@ -72,18 +86,28 @@ The watcher process starts automatically when you pick a deck and runs in a Term
 bash ~/anki-screenshot-creator/uninstall.sh
 ```
 
-Removes symlinks, the shell function, and the Claude skill. Prompts before deleting the repo. Leaves Hammerspoon and Python packages in place.
+Stops and removes the launchd agent, removes symlinks and the shell function. Prompts before deleting the repo.
 
 ## Files
 
 ```
-anki_watcher.py       # watchdog + Claude + AnkiConnect logic
+flask_server.py       # Flask app: API endpoints + watchdog thread
+config.py             # Read/write ~/.anki-screenshot-creator/config.json
+models.py             # Provider abstraction: Anthropic / OpenAI / Groq / Gemini / custom
 anki.zsh              # anki() shell function (sourced by ~/.zshrc)
 hammerspoon/
-  init.lua            # hotkey logic and deck chooser UI
+  init.lua            # Hotkey: checks session via GET /api/session
+web/
+  templates/
+    index.html        # Config + session UI
+  static/
+    style.css         # Dark theme
+    app.js            # Deck fetch, config save, session control, SSE cards
+launchd/
+  com.anki-screenshot-creator.plist   # launchd template (install.sh fills in paths)
 claude/
   anki.md             # /anki Claude Code skill
-CONTEXT.md            # living architecture doc, updated each Claude session
-install.sh            # one-step installer
-uninstall.sh          # removes everything install.sh added
+CONTEXT.md            # Living architecture doc, updated each Claude session
+install.sh            # One-step installer
+uninstall.sh          # Removes everything install.sh added
 ```

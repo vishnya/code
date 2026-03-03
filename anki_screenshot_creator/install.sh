@@ -22,7 +22,7 @@ fi
 
 # ── Python dependencies ───────────────────────────────────────────────────────
 echo "Installing Python dependencies..."
-pip3 install -q anthropic watchdog requests Pillow
+pip3 install -q anthropic openai watchdog requests Pillow flask
 echo "✓ Python dependencies"
 
 # ── Clone repo ────────────────────────────────────────────────────────────────
@@ -37,7 +37,6 @@ else
 fi
 
 # ── Symlinks ──────────────────────────────────────────────────────────────────
-ln -sf "$PROJECT/anki_watcher.py" "$HOME/anki_watcher.py"
 mkdir -p "$HOME/.hammerspoon"
 ln -sf "$PROJECT/hammerspoon/init.lua" "$HOME/.hammerspoon/init.lua"
 mkdir -p "$HOME/.anki-screenshot-creator"
@@ -56,15 +55,20 @@ if ! grep -q "anki-screenshot-creator/anki.zsh" "$HOME/.zshrc" 2>/dev/null; then
 fi
 echo "✓ Shell function"
 
-# ── Anthropic API key ─────────────────────────────────────────────────────────
-if [[ -z "$ANTHROPIC_API_KEY" ]] && ! grep -q "ANTHROPIC_API_KEY" "$HOME/.zshrc" 2>/dev/null; then
-  echo ""
-  read -rp "Paste your Anthropic API key (from console.anthropic.com): " api_key
-  printf '\nexport ANTHROPIC_API_KEY="%s"\n' "$api_key" >> "$HOME/.zshrc"
-  echo "✓ API key saved to ~/.zshrc"
-else
-  echo "✓ Anthropic API key"
-fi
+# ── launchd agent ─────────────────────────────────────────────────────────────
+PYTHON_PATH="$(which python3)"
+PLIST_DEST="$HOME/Library/LaunchAgents/com.anki-screenshot-creator.plist"
+
+mkdir -p "$HOME/Library/LaunchAgents"
+sed \
+  -e "s|__PYTHON__|${PYTHON_PATH}|g" \
+  -e "s|__PROJECT__|${PROJECT}|g" \
+  "$PROJECT/launchd/com.anki-screenshot-creator.plist" > "$PLIST_DEST"
+
+# Unload if already loaded (e.g. re-running install), then reload
+launchctl unload "$PLIST_DEST" 2>/dev/null || true
+launchctl load   "$PLIST_DEST"
+echo "✓ launchd agent (auto-starts on login)"
 
 # ── AnkiConnect ───────────────────────────────────────────────────────────────
 echo ""
@@ -84,6 +88,11 @@ open -a Hammerspoon
 echo "  If prompted, grant Accessibility permissions in System Settings."
 echo ""
 
-echo "=== Done! Press ⌥⇧A to start. ==="
+echo "=== Done! ==="
 echo ""
-echo "To uninstall: bash $REPO_DIR/uninstall.sh"
+echo "  1. Press ⌥⇧A  → opens http://localhost:5789 in your browser"
+echo "  2. Choose deck, add your API key, click Start Session"
+echo "  3. Press ⌥⇧A  → crosshair to screenshot → cards appear in Anki"
+echo ""
+echo "Server logs: tail -f /tmp/anki-screenshot-creator.log"
+echo "Uninstall:   bash $REPO_DIR/uninstall.sh"

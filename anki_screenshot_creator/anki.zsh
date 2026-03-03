@@ -1,7 +1,15 @@
+# Ensure anki-screenshot-creator server is running and open the config page
 anki() {
-  local mode="${1}"
-  if [[ -z "$mode" ]]; then
-    read "mode?Anki mode: "
+  local plist="$HOME/Library/LaunchAgents/com.anki-screenshot-creator.plist"
+  if ! curl -sf http://localhost:5789/api/session > /dev/null 2>&1; then
+    if [ -f "$plist" ]; then
+      echo "Starting anki-screenshot-creator server..."
+      launchctl load "$plist" 2>/dev/null || true
+      sleep 2
+    else
+      echo "Server not installed. Run install.sh first."
+      return 1
+    fi
   fi
-  python ~/anki_watcher.py --mode "$mode"
+  open http://localhost:5789
 }
