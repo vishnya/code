@@ -38,17 +38,39 @@ The script:
 
 ## Model support
 
-Configure everything in the web UI — no decisions needed at install time:
+Configure everything in the web UI — no decisions needed at install time. The **Model name** field (next to the Provider dropdown) controls the exact model; change it any time and it autosaves.
 
-| Provider | Examples | Notes |
-|----------|---------|-------|
-| Anthropic | `claude-sonnet-4-6`, `claude-opus-4-6` | Default |
-| OpenAI | `gpt-4o`, `gpt-4-turbo` | Needs OpenAI key |
-| Groq | `llama-3.3-70b-versatile` | Free tier available |
-| Gemini | `gemini-2.0-flash`, `gemini-1.5-pro` | Key from [aistudio.google.com](https://aistudio.google.com) |
-| Custom endpoint | Any Ollama/LM Studio model | Enter base URL, e.g. `http://localhost:11434/v1` |
+| Provider | Default model | Other models | API key |
+|----------|--------------|--------------|---------|
+| Anthropic *(default)* | `claude-sonnet-4-6` | `claude-opus-4-6` | [console.anthropic.com](https://console.anthropic.com) |
+| OpenAI | `gpt-4o` | `gpt-4-turbo`, `gpt-4o-mini` | [platform.openai.com/api-keys](https://platform.openai.com/api-keys) |
+| Groq | `llama-3.3-70b-versatile` | `llama-3.2-90b-vision-preview` | [console.groq.com](https://console.groq.com) — free tier |
+| Gemini | `gemini-2.0-flash` | `gemini-1.5-pro`, `gemini-2.0-pro` | [aistudio.google.com](https://aistudio.google.com) — free tier |
+| Custom endpoint | *(set in UI)* | any vision-capable model | none required |
 
-The **Model name** field (next to the Provider dropdown) controls which specific model is used — change it to `claude-opus-4-6`, `gpt-4-turbo`, etc. at any time. Settings autosave on blur.
+### Custom endpoint
+
+Use this for any server that speaks the OpenAI API format — local or remote. No API key field is shown; the server handles auth however it chooses.
+
+**Ollama (local, free)**
+```bash
+brew install ollama
+ollama pull llama3.2-vision   # or: minicpm-v, llava, bakllava
+```
+- Base URL: `http://localhost:11434/v1`
+- Model name: `llama3.2-vision` (match exactly what `ollama list` shows)
+
+**LM Studio (local, free)**
+1. Download from [lmstudio.ai](https://lmstudio.ai) and load a vision model
+2. Start the local server (default port 1234)
+- Base URL: `http://localhost:1234/v1`
+- Model name: the model identifier shown in LM Studio's server tab
+
+**Remote / self-hosted (vLLM, llama.cpp, Together AI, etc.)**
+- Base URL: your server's address, e.g. `http://192.168.1.10:8000/v1`
+- Model name: whatever identifier your server expects
+
+> Vision support varies by model. Whichever model you choose must accept image inputs — check before using.
 
 ## Config
 
